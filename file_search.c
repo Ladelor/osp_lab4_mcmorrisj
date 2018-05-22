@@ -42,6 +42,20 @@ int main(int argc, char* argv[])
 
 int fileSearch(char* filePath, char* searchString)
 {
+	DIR* dir = opendir(filePath);
+	if(dir != NULL)
+	{
+		struct dirent *dirDetails;
+		while((dirDetails = readdir(dir)))
+		{
+			if(strcmp(dirDetails->d_name, ".") == 0 ||
+				strcmp(dirDetails->d_name, "..") == 0)
+			{
+				continue;
+			}
+			fileSearch(dirDetails->d_name, searchString);
+		}
+	}
 	if(strstr(filePath, searchString) != NULL)
 	{
 		printf("%s\n", filePath);
