@@ -2,6 +2,8 @@
 #include <string.h>
 #include <dirent.h>
 
+int fileSearch(char*, char*);
+
 int main(int argc, char* argv[])
 {
 	if(argc != 3)
@@ -33,6 +35,16 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	printf("Hello\n");
+	fileSearch(argv[2], argv[1]);
+
+	return 0;
+}
+
+int fileSearch(char* filePath, char* searchString)
+{
+	if(strstr(filePath, searchString) != NULL)
+	{
+		printf("%s\n", filePath);
+	}
 	return 0;
 }
