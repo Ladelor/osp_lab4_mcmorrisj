@@ -46,19 +46,27 @@ int fileSearch(char* filePath, char* searchString)
 	if(dir != NULL)
 	{
 		struct dirent *dirDetails;
+		char nameCopy[256];
 		while((dirDetails = readdir(dir)))
 		{
-			if(strcmp(dirDetails->d_name, ".") == 0 ||
-				strcmp(dirDetails->d_name, "..") == 0)
+			if(strcmp(dirDetails->d_name, ".") != 0 &&
+				strcmp(dirDetails->d_name, "..") != 0)
 			{
-				continue;
+				//char nameCopy[256];
+				strcpy(nameCopy, filePath);
+				strcat(nameCopy, "/");
+				strcat(nameCopy, dirDetails->d_name);
+				if(strstr(dirDetails->d_name, searchString)
+					 != NULL)
+				{
+					if(opendir(nameCopy) != NULL)
+						printf("%s:\n", nameCopy);
+					else
+						printf("%s\n", nameCopy);
+				}
+				fileSearch(nameCopy, searchString);
 			}
-			fileSearch(dirDetails->d_name, searchString);
 		}
-	}
-	if(strstr(filePath, searchString) != NULL)
-	{
-		printf("%s\n", filePath);
 	}
 	return 0;
 }
