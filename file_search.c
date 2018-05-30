@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/time.h>
 
 int fileSearch(char*, char*);
 
@@ -43,9 +44,14 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	struct timeval startTime, endTime;
+	gettimeofday(&startTime, NULL);
+	if(strstr(argv[2], argv[1]) != NULL)
+		printf("%s:\n", argv[2]);
 	//Start the recursive function
 	fileSearch(argv[2], argv[1]);
-
+	gettimeofday(&endTime, NULL);
+	printf("Time: %ld\n", (endTime.tv_usec) - (startTime.tv_usec));
 	return 0;
 }
 
