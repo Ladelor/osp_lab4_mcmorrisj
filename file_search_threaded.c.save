@@ -7,7 +7,6 @@
 
 #define THREADS 4
 
-void* fileSearchWrapper(void*);
 void* fileSearch(void*);
 struct functionInput
 {
@@ -56,6 +55,9 @@ int main(int argc, char* argv[])
 
 	struct timeval startTime, endTime;
 	gettimeofday(&startTime, NULL);
+	if(strstr(argv[2], argv[1]) != NULL)
+		printf("%s:\n", argv[2]);
+
 	struct dirent* dirDetails;
 
 	int threads[THREADS];
@@ -72,12 +74,21 @@ int main(int argc, char* argv[])
 		count++;
 	}
 
+	int filesLeft = count;
+	while(filesLeft > 0)
+	{
+		for(int i = 0; i < count; i++)
+		if(
+	}
+
+	for(int i = 0; i < 
+
 	//Start the recursive function
 	pthread_t p1;
 	struct functionInput* fI = malloc(sizeof(struct functionInput));
 	fI->filePath = argv[2];
 	fI->searchString = argv[1];
-	pthread_create(&p1, NULL, fileSearchWrapper, fI);
+	pthread_create(&p1, NULL, fileSearch, fI);
 	//fileSearch(argv[2], argv[1]);
 	pthread_join(p1, NULL);
 	free(fI);
@@ -86,21 +97,13 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
-void* fileSearchWrapper(void* arg)
-{
-	struct functionInput* fI = arg;
-	if(strstr(fI->filePath, fI->searchString) != NULL)
-		printf("%s:\n", fI->filePath);
-	fileSearch(arg);
-	return 0;
-}
 //Function to recursively search a directory for a string
 //First param is path to start file
 //Second param is string to search for
 //Return is not really used
 void* fileSearch(void* arg)
 {
-	struct functionInput* fI = arg;
+	struct functionInput *fI = arg;
 	char* filePath = fI->filePath;
 	char* searchString = fI->searchString;
 	//Attempt to open the file as a directory
