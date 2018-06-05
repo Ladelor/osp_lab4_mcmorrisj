@@ -8,7 +8,6 @@
 
 #include <pthread.h>
 
-//Pre-pro macro for the number of threads to use
 #define THREADS 4
 
 void* fileSearch(void*);
@@ -159,44 +158,62 @@ int main(int argc, char* argv[])
 						//is done), mark the thread as open
 						threadOpen[x] = 1;
 					}
-					continue;
 				}
+				//This means the thread is open AND the file has
+				//not been searched by a thread yet
 				else if(files[i] != NULL)
 				{
+					//Set the correct fileInformation struct
 					fI[x]->filePath = files[i];
 					fI[x]->searchString = argv[1];
+					//Create the thread, args are the thread,
+					//attributes that can be null, the function
+					//to run, and the params in the form of a
+					//null(struct) pointer
 					pthread_create(&threads[x], NULL,
 						fileSearch, fI[x]);
+					//Mark the thread as not open
 					threadOpen[x] = 0;
+					//Mark that the file has been searched
 					files[i] = NULL;
+					//One less file left to search
 					filesLeft--;
 				}
 			}
 		}
 	}
 
+	//Before ending the program, we need to ensure that each thread is done
+	//with its current file
+	//Can join each thread and then free the corresponding fileInformation struct
 	for(int i = 0; i < THREADS; i ++)
 	{
 		pthread_join(threads[i], NULL);
 		free(fI[i]);
 	}
+	//We then need to free the file information struct pointers
 	free(fI);
 
+	//The last thing to free is the array of strings we got from strduping
+	//each file we found in the original directory
 	for(int i = 0; i < fileCount; i++)
 	{
 		free(files[i]);
 	}
+	//Finally, get the time AFTER the program is over
 	gettimeofday(&endTime, NULL);
+	//Print out how long the program took
 	printf("Time: %ld\n", (endTime.tv_usec) - (startTime.tv_usec));
 	return 0;
 }
 
 //Function to recursively search a directory for a string
-//First param is path to start file
-//Second param is string to search for
-//Return is not really used
+//Only param is a void* needed to use pthread_create
+//In reality, param is a functionInput struct pointer with filePath and searchString
 void* fileSearch(void* arg)
 {
+	//Need to basically do a cast to struct pointer then store in local vars
+	//for likely slight optimization
 	struct functionInput* fI = arg;
 	char* filePath = fI->filePath;
 	char* searchString = fI->searchString;
@@ -237,7 +254,10 @@ void* fileSearch(void* arg)
 						printf("%s\n", nameCopy);
 				}
 				//Recursive call on each file found
-				struct functionInput* fI = malloc(sizeof(struct functionInput));
+				//We need to malloc each functionInput, set correct
+				//values, then free after searching the file
+				struct functionInput* fI =
+					 malloc(sizeof(struct functionInput));
 				fI->searchString = searchString;
 				fI->filePath = nameCopy;
 				fileSearch(fI);
