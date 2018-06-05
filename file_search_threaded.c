@@ -1,3 +1,4 @@
+//Needed to remove gcc compiler warning for the tryjoin function
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +8,7 @@
 
 #include <pthread.h>
 
+//Pre-pro macro for the number of threads to use
 #define THREADS 4
 
 void* fileSearch(void*);
@@ -55,21 +57,35 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	//Create timeval structs to keep track of how long the program takes
 	struct timeval startTime, endTime;
+	//Function to get current time
+	//Params are reference to time val struct (startTime)
+	//And some timezone thing that just takes NULL
 	gettimeofday(&startTime, NULL);
+	//directory details struct pointer for getting dir names
 	struct dirent* dirDetails;
 
+	//We have to check the first directory because my function is bad
+	//Should have fixed the problem but instead bandaids everywhere
 	if(strstr(argv[2], argv[1]) != NULL)
 		printf("%s:\n", argv[2]);
 
+	//Going to store each filePath found in our starting directory
+	//Our threads will run through the list later
 	char* files[500];
+	//Int to keep track of how many files we have to go through
 	int fileCount = 0;
 
+	//Read through our starting directory and store details of each file found
+	//in dirDetails
 	while((dirDetails = readdir(dir)))
 	{
+		//If we found . or .., we don't want to search through them so ignore
 		if(strcmp(dirDetails->d_name, ".") != 0 &&
 			strcmp(dirDetails->d_name, "..") != 0)
 		{
+			//Copy the string so we can modify and have what we need
 			char stringCopy[256];
 			strcpy(stringCopy, argv[2]);
 			strcat(stringCopy, "/");
@@ -139,21 +155,15 @@ int main(int argc, char* argv[])
 	}
 	free(fI);
 
+	for(int i = 0; i < fileCount; i++)
+	{
+		free(files[i]);
+	}
 	gettimeofday(&endTime, NULL);
 	printf("Time: %ld\n", (endTime.tv_usec) - (startTime.tv_usec));
 	return 0;
 }
 
-void* fileSearchWrapper(void* arg)
-{
-	struct functionInput* fI = arg;
-	if(strstr(fI->filePath, fI->searchString) != NULL)
-	{
-		printf("%s:\n", fI->filePath);
-	}
-	fileSearch(arg);
-	return 0;
-}
 //Function to recursively search a directory for a string
 //First param is path to start file
 //Second param is string to search for
