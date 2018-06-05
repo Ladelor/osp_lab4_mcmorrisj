@@ -1,15 +1,14 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
 #include <sys/time.h>
 
-#define _GNU_SOURCE
 #include <pthread.h>
 
 #define THREADS 4
 
-void* fileSearchWrapper(void*);
 void* fileSearch(void*);
 struct functionInput
 {
@@ -60,16 +59,12 @@ int main(int argc, char* argv[])
 	gettimeofday(&startTime, NULL);
 	struct dirent* dirDetails;
 
-	int threadOpen[THREADS];
-	pthread_t threads[THREADS];
-	for(int i = 0; i < THREADS; i++)
-	{
-		threadOpen[i] = 1;
-	}
 	if(strstr(argv[2], argv[1]) != NULL)
 		printf("%s:\n", argv[2]);
+
 	char* files[500];
 	int fileCount = 0;
+
 	while((dirDetails = readdir(dir)))
 	{
 		if(strcmp(dirDetails->d_name, ".") != 0 &&
@@ -92,7 +87,22 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	int threadOpen[THREADS];
+	pthread_t threads[THREADS];
+	for(int i = 0; i < THREADS; i++)
+	{
+		threadOpen[i] = 1;
+	}
+
 	int filesLeft = fileCount;
+
+	struct functionInput** fI = malloc(sizeof(struct functionInput*)
+		* THREADS);
+	for(int i = 0; i < THREADS; i++)
+	{
+		fI[i] = (struct functionInput*)malloc(sizeof(struct functionInput));
+	}
+
 	while(filesLeft > 0)
 	{
 		for(int i = 0; i < fileCount; i++)
@@ -111,12 +121,10 @@ int main(int argc, char* argv[])
 				}
 				else if(files[i] != NULL)
 				{
-					struct functionInput* fI = malloc(
-						sizeof(struct functionInput));
-					fI->filePath = files[i];
-					fI->searchString = argv[1];
+					fI[x]->filePath = files[i];
+					fI[x]->searchString = argv[1];
 					pthread_create(&threads[x], NULL,
-						fileSearch, fI);
+						fileSearch, fI[x]);
 					threadOpen[x] = 0;
 					files[i] = NULL;
 				}
@@ -124,29 +132,13 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	for(int i = 0; i > fileCount; i++)
-	{
-		printf("%s\n", files[i]);
-	}
-
 	for(int i = 0; i < THREADS; i ++)
 	{
 		pthread_join(threads[i], NULL);
+		free(fI[i]);
 	}
+	free(fI);
 
-
-	/*
-	struct functionInput* fI = malloc(sizeof(struct functionInput));
-	fI->filePath = argv[2];
-	fI->searchString = argv[1];
-
-	//Start the recursive function
-	pthread_t p1;
-	pthread_create(&p1, NULL, fileSearchWrapper, fI);
-	//fileSearch(argv[2], argv[1]);
-	pthread_join(p1, NULL);
-//	free(fI);
-	*/
 	gettimeofday(&endTime, NULL);
 	printf("Time: %ld\n", (endTime.tv_usec) - (startTime.tv_usec));
 	return 0;
