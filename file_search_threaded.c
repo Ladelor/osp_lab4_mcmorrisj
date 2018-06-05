@@ -90,8 +90,14 @@ int main(int argc, char* argv[])
 			strcpy(stringCopy, argv[2]);
 			strcat(stringCopy, "/");
 			strcat(stringCopy, dirDetails->d_name);
+			//We are going to lose this local copy of the string
+			//So we dup a new one and store the pointer in the files array
 			files[fileCount] = strdup(stringCopy);
+			//Increment fileCount as we have found another file
 			fileCount++;
+			//Again, we have to check these starting files for it they are
+			//one we are looking for, still should have fixed issue and
+			//not just used bandaids
 			if(strstr(dirDetails->d_name, argv[1]) != NULL)
 			{
 				if(opendir(stringCopy) != NULL)
@@ -103,34 +109,54 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	int threadOpen[THREADS];
+	//A bool value to keep track of which threads are currently running
+	char threadOpen[THREADS];
+	//array of pthread's to store each of the threads we are working with
 	pthread_t threads[THREADS];
+	//initialize our thread tracking array with available state (1)
 	for(int i = 0; i < THREADS; i++)
 	{
 		threadOpen[i] = 1;
 	}
 
+	//Need both the number of files left to search and the total we found
+	//So copy the value in another int
 	int filesLeft = fileCount;
 
+	//Need to store each of our functionInput structs for the thread creations
+	//Need to do it this way to avoid memory leak
+	//First, store a double pointer to the struct and malloc with the number of
+	//threads times the size of a struct pointer
 	struct functionInput** fI = malloc(sizeof(struct functionInput*)
 		* THREADS);
+	//Next, need to malloc each functionInput struct at each array location
+	//Need to cast to struct pointer as malloc returns void pointer
 	for(int i = 0; i < THREADS; i++)
 	{
 		fI[i] = (struct functionInput*)malloc(sizeof(struct functionInput));
 	}
 
+	//This while will cycle many than filesLeft times
+	//Will continue to run through until each file has been assigned to a thread
+	//There will be some wasted time but not too much
 	while(filesLeft > 0)
 	{
+		//Cycle through each of the original count of files
 		for(int i = 0; i < fileCount; i++)
 		{
+			//Not a great solution here but its the logic I came up with
+			//On each file, go through each thread
 			for(int x = 0; x < THREADS; x++)
 			{
+				//If the thread is not open
 				if(threadOpen[x] == 0)
 				{
+					//Try to join it
 					if(pthread_tryjoin_np(threads[x],
 						NULL) == 0)
 					{
-						filesLeft--;
+						//If we succeed in the join (thread
+						//is done), mark the thread as open
 						threadOpen[x] = 1;
 					}
 					continue;
@@ -143,6 +169,7 @@ int main(int argc, char* argv[])
 						fileSearch, fI[x]);
 					threadOpen[x] = 0;
 					files[i] = NULL;
+					filesLeft--;
 				}
 			}
 		}
